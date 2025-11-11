@@ -1,0 +1,250 @@
+body {
+  font-family: "Poppins", sans-serif;
+  background: #e3f2fd;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  text-align: center;
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 350px;
+}
+
+.card h2 {
+  color: #00796b;
+}
+
+#value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1b5e20;
+  margin: 10px 0;
+}
+
+.actions {
+  margin-top: 15px;
+}
+
+input {
+  padding: 8px;
+  width: 100px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+button {
+  padding: 8px 14px;
+  background: #00796b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #004d40;
+}
+
+#status {
+  margin-top: 10px;
+  color: #1565c0;
+  font-size: 0.9rem;
+}
+.hidden {
+  display: none;
+}
+
+input[type="text"],
+input[type="password"] {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.error {
+  color: #ff4444;
+  font-weight: 500;
+  margin-top: 5px;
+}
+select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  background: #fff;
+}
+
+button {
+  background-color: #3a7a44;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin-top: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button:hover {
+  background-color: #2f6338;
+}
+
+.login-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(to right, #e3f2e1, #c1dfc4);
+}
+
+.login-container {
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+
+.login-card {
+  background: #fff;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: all 0.4s ease;
+}
+
+h1.title {
+  margin-bottom: 10px;
+  color: #2f6338;
+}
+
+.subtitle {
+  margin-bottom: 20px;
+  color: #555;
+}
+.hidden { display: none; }
+
+.error {
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #ddd;
+}
+
+.roles button {
+  margin: 10px;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #6bbf59, #c3f0a8);
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dashboard {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 350px;
+  text-align: center;
+}
+
+h1 {
+  color: #3b6b3b;
+}
+
+.card {
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+input {
+  width: 80%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #3e8e41;
+}
+
+.logout-btn {
+  background-color: #d9534f;
+}
+
+.logout-btn:hover {
+  background-color: #c9302c;
+}
+body {
+  font-family: Arial, sans-serif;
+  background: #f3fdf5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  text-align: center;
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+video, canvas {
+  border-radius: 10px;
+  margin: 10px;
+  border: 2px solid #ccc;
+}
+
+.btn-group button {
+  margin: 5px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background: #007b55;
+  color: white;
+  cursor: pointer;
+}
+
+#status {
+  margin-top: 10px;
+  font-weight: bold;
+}

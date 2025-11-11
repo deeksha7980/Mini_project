@@ -1,0 +1,143 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Times New Roman', serif;
+  overflow-x: hidden;
+  height: 100vh;
+  background: url('../login.png') no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* Optional: dark overlay for contrast */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: -1;
+}
+
+/* Split container */
+.container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+/* LEFT INFO SECTION */
+.info-section {
+  flex: 3;
+  background: rgba(0, 0, 0, 0.6); /* semi-transparent for readability */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: left;
+}
+
+.info-content {
+  max-width: 600px;
+}
+
+.info-content h1 {
+  font-size: 2rem;
+  color: #00e7c5;
+  margin-bottom: 10px;
+}
+
+.info-content p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin-bottom: 30px;
+  color: #d5fdf9;
+}
+
+/* RIGHT LOGIN SECTION */
+.login-section {
+  flex: 2;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container {
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  max-width: 400px;
+  text-align: center;
+}
+
+h1 {
+  color: rgb(31, 172, 31);
+}
+
+h3 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  text-align: left;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+select,
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: 'Times New Roman', serif;
+}
+
+.auth-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.auth-buttons button {
+  width: 48%;
+  padding: 10px;
+  border: none;
+  background-color: rgb(31, 172, 31);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Times New Roman', serif;
+  transition: 0.3s;
+}
+
+.auth-buttons button:hover {
+  background-color: rgb(26, 145, 26);
+}
+
+/* Animations */
+.fade-in-left {
+  animation: fadeLeft 1.5s ease-out forwards;
+}
+
+.fade-in-right {
+  animation: fadeRight 1.5s ease-out forwards;
+}
+
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}

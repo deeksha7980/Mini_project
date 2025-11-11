@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HerbChain | Login</title>
+  <link rel="stylesheet" href="css/index.css" />
+</head>
+
+<body>
+  <div class="container">
+    <!-- LEFT SECTION: Blockchain Info -->
+    <div class="info-section">
+      <div class="info-content fade-in-left">
+        <h1>🔗 What is Blockchain?</h1>
+        <p>
+          Blockchain is a secure, decentralized digital ledger that records transactions in a transparent and tamper-proof manner. 
+          Every entry is verified by a distributed network, ensuring data authenticity and traceability.
+        </p>
+
+        <h1>🌿 Why HerbChain uses Blockchain?</h1>
+        <p>
+          HerbChain ensures every Ayurvedic herb is traceable from the farm to the consumer. 
+          By leveraging blockchain, we guarantee transparency, prevent tampering, and promote trust between farmers, labs, manufacturers, and consumers.
+        </p>
+      </div>
+    </div>
+
+    <!-- RIGHT SECTION: Login System -->
+    <div class="login-section fade-in-right">
+      <div class="login-container">
+        <h1>🌿 HerbChain</h1>
+        <h3>Trace the purity of Ayurveda from Farm to Shelf</h3>
+
+        <!-- Role selection -->
+        <label for="role">Select your role:</label>
+        <select id="role">
+          <option value="">-- Select Role --</option>
+          <option value="farmer">👨‍🌾 Farmer</option>
+          <option value="lab">🧪 Lab</option>
+          <option value="manufacturer">🏭 Manufacturer</option>
+        </select>
+
+        <div id="authSection" style="display:none;">
+          <label for="username">Username:</label>
+          <input type="text" id="username" placeholder="Enter username" />
+
+          <label for="password">Password:</label>
+          <input type="password" id="password" placeholder="Enter password" />
+
+          <div class="auth-buttons">
+            <button onclick="signIn()">Sign In</button>
+            <button onclick="signUp()">Sign Up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Original JS Logic (unchanged) -->
+  <script>
+    const roleSelect = document.getElementById("role");
+    const authSection = document.getElementById("authSection");
+
+    roleSelect.addEventListener("change", () => {
+      authSection.style.display = roleSelect.value ? "block" : "none";
+    });
+
+    function signUp() {
+      const role = roleSelect.value;
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!role || !username || !password) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      let users = JSON.parse(localStorage.getItem("ayurtrace_users")) || [];
+      if (users.find(u => u.username === username && u.role === role)) {
+        alert("User already exists! Please Sign In instead.");
+        return;
+      }
+
+      users.push({ role, username, password });
+      localStorage.setItem("ayurtrace_users", JSON.stringify(users));
+      alert("✅ Signup successful! You can now Sign In.");
+    }
+
+    function signIn() {
+      const role = roleSelect.value;
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      let users = JSON.parse(localStorage.getItem("ayurtrace_users")) || [];
+      const user = users.find(u => u.username === username && u.password === password && u.role === role);
+
+      if (!user) {
+        alert("❌ Invalid credentials. Please check and try again.");
+        return;
+      }
+
+      localStorage.setItem("ayurtrace_loggedin_user", JSON.stringify(user));
+
+      // Redirect based on role
+      if (role === "farmer") window.location.href = "farmer.html";
+      else if (role === "lab") window.location.href = "lab.html";
+      else if (role === "manufacturer") window.location.href = "manufacturer.html";
+    }
+  </script>
+</body>
+</html>

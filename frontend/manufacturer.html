@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manufacturer Dashboard — HerbChain</title>
+
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      margin: 0;
+      padding: 0;
+      background: url("imgs/manufacturer.png") no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+    }
+
+    header {
+      background: rgba(27, 138, 76, 0.9);
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    header button {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid #fff;
+      color: white;
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-family: 'Times New Roman', serif;
+      transition: 0.3s ease;
+    }
+
+    header button:hover {
+      background: #fff;
+      color: #1b8a4c;
+    }
+
+    #empty {
+      text-align: center;
+      color: #1b8a4c;
+      font-size: 18px;
+      background: rgba(255,255,255,0.9);
+      padding: 20px 30px;
+      border-radius: 10px;
+      display: inline-block;
+      margin: 50px auto;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+      padding: 40px 20px;
+      flex: 1;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.92);
+      color: #000;
+      border-radius: 14px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+      width: 330px;
+      padding: 20px;
+      transition: transform 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+    }
+
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .details {
+      text-align: left;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .details b {
+      color: #1b8a4c;
+    }
+
+    .qr-section {
+      text-align: center;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+    }
+
+    .qr-section button {
+      margin-top: 10px;
+      background-color: #1b8a4c;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Times New Roman', serif;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .qr-section button:hover {
+      background-color: #145a32;
+    }
+
+    footer {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      margin-top: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>🏭 Welcome, <b>Manufacturer</b></div>
+    <button id="logoutBtn">Logout</button>
+  </header>
+
+  <main>
+    <div id="empty">Loading approved herbs...</div>
+    <div id="herbList" class="container"></div>
+  </main>
+
+  <footer>© HerbChain — Manufacturer Verification Portal</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+  <script>
+    // 🌍 Public URL for consumer QR redirection
+    const PUBLIC_URL = "https://ysammmqwxp.loclx.io";
+
+    async function loadApprovedHerbs() {
+      try {
+        const res = await fetch("http://localhost:5000/api/farmers-local");
+        const herbs = await res.json();
+
+        const approvedHerbs = herbs.filter(h => h.status === "approved");
+        const container = document.getElementById("herbList");
+        const empty = document.getElementById("empty");
+        container.innerHTML = "";
+
+        if (!approvedHerbs.length) {
+          empty.style.display = "inline-block";
+          empty.textContent = "No approved herbs yet.";
+          return;
+        }
+
+        empty.style.display = "none";
+
+        approvedHerbs.forEach((herb, i) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${herb.photoUrl}" alt="Herb Image" />
+            <div class="details">
+              <p><b>${herb.herbName}</b></p>
+              <p><b>Farmer:</b> ${herb.farmerName}</p>
+              <p><b>Batch ID:</b> ${herb.herbId}</p>
+              <p><b>Verified By:</b> ${herb.labName || "Lab"}</p>
+              <p><b>Certificate:</b> ${herb.certificate || "—"}</p>
+            </div>
+            <div class="qr-section" id="qr-${i}">
+              <div id="qrcode-${i}" style="display:inline-block;"></div><br>
+              <button onclick="downloadQR(${i}, '${herb.herbName}')">📥 Download QR</button>
+            </div>
+          `;
+
+          container.appendChild(card);
+
+          const qrData = `${PUBLIC_URL}/frontend/consumer.html?batch=${encodeURIComponent(herb.herbId)}`;
+          new QRCode(document.getElementById(`qrcode-${i}`), {
+            text: qrData,
+            width: 120,
+            height: 120,
+            colorDark: "#1b8a4c",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        });
+      } catch (err) {
+        console.error("Error loading herbs:", err);
+        alert("⚠️ Error fetching approved herbs!");
+      }
+    }
+
+    function downloadQR(index, herbName) {
+      const qrCanvas = document.querySelector(`#qrcode-${index} canvas`);
+      if (!qrCanvas) return alert("QR not ready yet!");
+      const link = document.createElement("a");
+      link.download = `${herbName}_QR.png`;
+      link.href = qrCanvas.toDataURL("image/png");
+      link.click();
+    }
+
+    document.getElementById("logoutBtn").onclick = () => {
+      alert("Logged out successfully!");
+      window.location.href = "index.html";
+    };
+
+    loadApprovedHerbs();
+  </script>
+</body>
+</html>
