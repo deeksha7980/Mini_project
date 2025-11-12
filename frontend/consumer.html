@@ -3,21 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Consumer Dashboard — HerbChain</title>
+  <title>HerbChain — Consumer</title>
+
+  <!-- jsPDF for certificate -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     body {
       font-family: 'Times New Roman', serif;
       background: url("imgs/consumer.png") no-repeat center center fixed;
       background-size: cover;
-      color: #fff;
       margin: 0;
+      color: #fff;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
     }
 
     header {
-      background: rgba(27, 138, 76, 0.9);
+      background: rgba(27,138,76,0.9);
       padding: 15px 25px;
       display: flex;
       justify-content: space-between;
@@ -34,13 +38,10 @@
       border-radius: 6px;
       padding: 8px 14px;
       cursor: pointer;
-      transition: 0.3s ease;
+      transition: 0.3s;
     }
 
-    header button:hover {
-      background: white;
-      color: #1b8a4c;
-    }
+    header button:hover { background:white; color:#1b8a4c; }
 
     .main {
       flex: 1;
@@ -51,26 +52,64 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.94);
       color: #000;
       border-radius: 16px;
       box-shadow: 0 8px 18px rgba(0,0,0,0.25);
       max-width: 750px;
       width: 100%;
       padding: 30px 40px;
-      text-align: center;
+      text-align: left;
       backdrop-filter: blur(10px);
     }
 
     h1 {
       color: #1b8a4c;
+      text-align: center;
     }
 
-    .result img {
+    img {
       max-width: 100%;
       border-radius: 10px;
-      margin-top: 10px;
+      margin-top: 15px;
+      border: 1px solid #ccc;
     }
+
+    .status {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-left: 6px;
+      text-transform: capitalize;
+    }
+    .status.pending { background:#fff3cd; color:#856404; }
+    .status.approved { background:#d4edda; color:#155724; }
+    .status.rejected { background:#f8d7da; color:#721c24; }
+
+    .certificate {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f6fdf6;
+      border: 1px solid #e2ece1;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+
+    #downloadBtn {
+      display: inline-block;
+      background: #1b8a4c;
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      margin-top: 20px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+
+    #downloadBtn:hover { background:#146c43; }
 
     footer {
       text-align: center;
@@ -84,61 +123,153 @@
 </head>
 <body>
   <header>
-    <div>🧾 Welcome, <b>Consumer</b></div>
-    <button onclick="logout()">Logout</button>
+    <div>🧾 HerbChain — <b>Consumer</b></div>
   </header>
 
   <div class="main">
     <div class="card">
       <h1>Herb Details</h1>
-      <div id="resultBox">Loading...</div>
+      <div id="resultBox">Loading herb data...</div>
     </div>
   </div>
 
   <footer>© HerbChain — Consumer Traceability Portal</footer>
 
   <script>
+    // ✅ Dynamic API detection (works for Loclx + localhost)
+    const API_BASE = window.location.hostname.includes("loclx.io")
+      ? window.location.origin.replace("/frontend", "")
+      : "http://localhost:5000";
+
     async function loadHerb() {
       const params = new URLSearchParams(window.location.search);
       const batch = params.get("batch");
       const box = document.getElementById("resultBox");
 
       if (!batch) {
-        box.innerHTML = "Invalid QR or missing batch ID.";
+        box.innerHTML = "❌ Invalid QR or missing batch ID.";
         return;
       }
 
       try {
-        const res = await fetch("http://localhost:5000/api/farmers-local");
-        const data = await res.json();
-        const herb = data.find(h => h.herbId === batch);
+        const res = await fetch(`${API_BASE}/api/farmers-local?nocache=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Server unreachable");
+
+        const herbs = await res.json();
+        const herb = herbs.find(h => h.herbId === batch);
 
         if (!herb) {
           box.innerHTML = "<b>No record found for this herb.</b>";
           return;
         }
 
+        // ✅ Fix image path logic for Loclx + localhost
+        let photoSrc = "";
+        if (herb.photoUrl && herb.photoUrl.startsWith("data:image")) {
+          photoSrc = herb.photoUrl;
+        } else if (herb.photoUrl && (herb.photoUrl.startsWith("http") || herb.photoUrl.startsWith("https"))) {
+          photoSrc = herb.photoUrl;
+        } else if (herb.photoUrl) {
+          photoSrc = `${API_BASE}/${herb.photoUrl.replace(/^(\.\/|\/)+/, "")}`;
+        } else if (herb.image && herb.image.startsWith("data:image")) {
+          photoSrc = herb.image;
+        } else if (herb.image) {
+          photoSrc = `${API_BASE}/${herb.image.replace(/^(\.\/|\/)+/, "")}`;
+        }
+
+        const statusClass = herb.status || "pending";
+
         box.innerHTML = `
-          <h2>${herb.herbName}</h2>
+          <h2><b>Name:</b> ${herb.herbName}</h2>
+          <p><b>Batch ID:</b> ${herb.herbId}</p>
           <p><b>Farmer:</b> ${herb.farmerName}</p>
-          <p><b>Location:</b> ${herb.location || "N/A"}</p>
-          <p><b>Status:</b> ${herb.status}</p>
-          <p><b>Lab Verified By:</b> ${herb.labName || "Not verified"}</p>
-          <p><b>Certificate:</b> ${herb.certificate || "Not available"}</p>
-          ${herb.photoUrl ? `<img src="${herb.photoUrl}" alt="Herb Photo"/>` : ""}
+          <p><b>Location:</b> ${herb.latitude || ""}${herb.longitude ? ", " + herb.longitude : ""}</p>
+          <p><b>Status:</b> <span class="status ${statusClass}">${herb.status}</span></p>
+          <p><b>Lab Verified By:</b> ${herb.labName || "—"}</p>
+          <p><b>Certificate / Remarks:</b></p>
+          <div class="certificate">${herb.certificate || "No remarks available."}</div>
+          ${photoSrc ? `<img src="${photoSrc}" alt="Herb Photo">` : ""}
+          ${herb.status === "approved" ? 
+            `<button id="downloadBtn" onclick='downloadCertificate(${JSON.stringify(herb).replace(/'/g, "&apos;")})'>📜 Download Certificate</button>` : ""}
         `;
       } catch (err) {
-        console.error(err);
-        box.innerHTML = "Error loading herb data!";
+        console.error("Error loading herb:", err);
+        box.innerHTML = "<b>Error loading herb data. Check console for details.</b>";
       }
     }
 
-    function logout() {
-      window.location.href = "index.html";
+    async function downloadCertificate(herb) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("landscape", "pt", "a4");
+
+      // Background
+      doc.setFillColor(255, 255, 245);
+      doc.rect(0, 0, 842, 595, "F");
+      doc.setDrawColor(218, 165, 32);
+      doc.setLineWidth(6);
+      doc.rect(20, 20, 802, 555);
+
+      // Title
+      doc.setFont("times", "bold");
+      doc.setFontSize(34);
+      doc.setTextColor(44, 88, 56);
+      doc.text("Certificate of Analysis", 421, 100, { align: "center" });
+
+      // Subtitle
+      doc.setFont("times", "italic");
+      doc.setFontSize(18);
+      doc.setTextColor(90);
+      doc.text("Issued under AyurTrace Quality Assurance Program", 421, 130, { align: "center" });
+
+      // Details
+      doc.setFont("times", "normal");
+      doc.setFontSize(16);
+      const startY = 190, gap = 34;
+      doc.text(`Herb Name: ${herb.herbName}`, 120, startY);
+      doc.text(`Farmer: ${herb.farmerName}`, 120, startY + gap);
+      doc.text(`Batch ID: ${herb.herbId}`, 120, startY + gap * 2);
+      doc.text(`Location: ${herb.latitude || ""}${herb.longitude ? ", " + herb.longitude : ""}`, 120, startY + gap * 3);
+      doc.text(`Lab Verified By: ${herb.labName || "N/A"}`, 120, startY + gap * 4);
+
+      doc.setFont("times", "italic");
+      doc.setFontSize(14);
+      doc.text("Remarks:", 120, startY + gap * 6);
+      doc.setFont("times", "normal");
+      doc.text(herb.certificate || "Approved for quality assurance.", 120, startY + gap * 7, { maxWidth: 400 });
+
+      // Image & Stamp
+      const approvedStamp = "https://i.ibb.co/G7b7rGmZ/approved.png";
+      let imgSrc = herb.photoUrl || herb.image || "";
+      if (imgSrc && !imgSrc.startsWith("data:image"))
+        imgSrc = `${API_BASE}/${imgSrc.replace(/^(\.\/|\/)+/, "")}`;
+
+      const addStamp = () => {
+        const stamp = new Image();
+        stamp.crossOrigin = "anonymous";
+        stamp.src = approvedStamp;
+        stamp.onload = () => {
+          doc.addImage(stamp, "PNG", 640, 100, 120, 120);
+          doc.save(`${herb.herbId}_Certificate.pdf`);
+        };
+        stamp.onerror = () => doc.save(`${herb.herbId}_Certificate.pdf`);
+      };
+
+      if (imgSrc) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imgSrc;
+        img.onload = () => {
+          try {
+            doc.addImage(img, "JPEG", 580, 180, 200, 180);
+          } catch(e) { console.warn("Image add failed", e); }
+          addStamp();
+        };
+        img.onerror = addStamp;
+      } else addStamp();
     }
 
-    // Force reload bypassing cache
-    window.addEventListener("pageshow", loadHerb);
+
+    window.addEventListener("load", loadHerb);
   </script>
 </body>
 </html>

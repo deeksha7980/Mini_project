@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Manufacturer Dashboard — HerbChain</title>
 
   <style>
@@ -19,7 +19,7 @@
     }
 
     header {
-      background: rgba(27, 138, 76, 0.9);
+      background: rgba(27,138,76,0.9);
       color: white;
       padding: 15px 25px;
       display: flex;
@@ -40,11 +40,7 @@
       font-family: 'Times New Roman', serif;
       transition: 0.3s ease;
     }
-
-    header button:hover {
-      background: #fff;
-      color: #1b8a4c;
-    }
+    header button:hover { background: white; color: #1b8a4c; }
 
     #empty {
       text-align: center;
@@ -69,7 +65,7 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.94);
       color: #000;
       border-radius: 14px;
       box-shadow: 0 6px 16px rgba(0,0,0,0.25);
@@ -79,9 +75,7 @@
       backdrop-filter: blur(10px);
     }
 
-    .card:hover {
-      transform: scale(1.03);
-    }
+    .card:hover { transform: scale(1.03); }
 
     .card img {
       width: 100%;
@@ -91,21 +85,10 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
-    .details {
-      text-align: left;
-      margin-top: 10px;
-      line-height: 1.6;
-    }
+    .details { text-align: left; margin-top: 10px; line-height: 1.5; }
+    .details b { color: #1b8a4c; }
 
-    .details b {
-      color: #1b8a4c;
-    }
-
-    .qr-section {
-      text-align: center;
-      padding-top: 15px;
-      border-top: 1px solid #ddd;
-    }
+    .qr-section { text-align: center; padding-top: 12px; border-top: 1px solid #eee; margin-top: 12px; }
 
     .qr-section button {
       margin-top: 10px;
@@ -120,110 +103,109 @@
       transition: all 0.3s ease;
     }
 
-    .qr-section button:hover {
-      background-color: #145a32;
-    }
+    .qr-section button:hover { background-color: #145a32; }
 
     footer {
       text-align: center;
-      color: rgba(255, 255, 255, 0.9);
+      color: rgba(255,255,255,0.9);
       padding: 15px;
       font-size: 14px;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.35);
       margin-top: auto;
     }
   </style>
 </head>
-
 <body>
   <header>
     <div>🏭 Welcome, <b>Manufacturer</b></div>
     <button id="logoutBtn">Logout</button>
   </header>
 
-  <main>
-    <div id="empty">Loading approved herbs...</div>
-    <div id="herbList" class="container"></div>
-  </main>
+  <div id="empty">Loading approved herbs...</div>
+  <div id="herbList" class="container" aria-live="polite"></div>
 
   <footer>© HerbChain — Manufacturer Verification Portal</footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <!-- QR library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <script>
-    // 🌍 Public URL for consumer QR redirection
-    const PUBLIC_URL = "https://ysammmqwxp.loclx.io";
+  const PUBLIC_URL = "https://tv6imwmsvd.loclx.io";
+  async function loadApprovedHerbs() {
+    try {
+      const res = await fetch("http://localhost:5000/api/farmers-local?nocache=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch herbs");
+      const herbs = await res.json();
 
-    async function loadApprovedHerbs() {
-      try {
-        const res = await fetch("http://localhost:5000/api/farmers-local");
-        const herbs = await res.json();
+      const approvedHerbs = Array.isArray(herbs) ? herbs.filter(h => h.status === "approved") : [];
+      const container = document.getElementById("herbList");
+      const empty = document.getElementById("empty");
+      container.innerHTML = "";
 
-        const approvedHerbs = herbs.filter(h => h.status === "approved");
-        const container = document.getElementById("herbList");
-        const empty = document.getElementById("empty");
-        container.innerHTML = "";
+      if (!approvedHerbs.length) {
+        empty.style.display = "inline-block";
+        empty.textContent = "No approved herbs yet.";
+        return;
+      }
 
-        if (!approvedHerbs.length) {
-          empty.style.display = "inline-block";
-          empty.textContent = "No approved herbs yet.";
-          return;
-        }
+      empty.style.display = "none";
 
-        empty.style.display = "none";
+      approvedHerbs.forEach((herb, i) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const imgSrc = herb.photoUrl || herb.image || "imgs/placeholder.png";
 
-        approvedHerbs.forEach((herb, i) => {
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <img src="${herb.photoUrl}" alt="Herb Image" />
-            <div class="details">
-              <p><b>${herb.herbName}</b></p>
-              <p><b>Farmer:</b> ${herb.farmerName}</p>
-              <p><b>Batch ID:</b> ${herb.herbId}</p>
-              <p><b>Verified By:</b> ${herb.labName || "Lab"}</p>
-              <p><b>Certificate:</b> ${herb.certificate || "—"}</p>
-            </div>
-            <div class="qr-section" id="qr-${i}">
-              <div id="qrcode-${i}" style="display:inline-block;"></div><br>
-              <button onclick="downloadQR(${i}, '${herb.herbName}')">📥 Download QR</button>
-            </div>
-          `;
+        card.innerHTML = `
+          <img src="${imgSrc}" alt="Herb image" onerror="this.src='imgs/placeholder.png'"/>
+          <div class="details">
+            <p><b>${herb.herbName || '—'}</b></p>
+            <p><b>Farmer:</b> ${herb.farmerName || '—'}</p>
+            <p><b>Batch ID:</b> ${herb.herbId || '—'}</p>
+            <p><b>Certificate:</b> ${herb.certificate ? herb.certificate : '—'}</p>
+          </div>
+          <div class="qr-section" id="qr-${i}">
+            <div id="qrcode-${i}" style="display:inline-block;"></div><br>
+            <button onclick="downloadQR(${i}, '${(herb.herbName || 'herb').replace(/'/g, '')}')">📥 Download QR</button>
+          </div>
+        `;
+        container.appendChild(card);
 
-          container.appendChild(card);
-
-          const qrData = `${PUBLIC_URL}/frontend/consumer.html?batch=${encodeURIComponent(herb.herbId)}`;
+        const qrData = `${PUBLIC_URL}/frontend/consumer.html?batch=${encodeURIComponent(herb.herbId)}`;
+        try {
           new QRCode(document.getElementById(`qrcode-${i}`), {
             text: qrData,
             width: 120,
             height: 120,
             colorDark: "#1b8a4c",
             colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M,
+            correctLevel: QRCode.CorrectLevel.M
           });
-        });
-      } catch (err) {
-        console.error("Error loading herbs:", err);
-        alert("⚠️ Error fetching approved herbs!");
-      }
+        } catch (e) {
+          console.error("QR render error", e);
+        }
+      });
+    } catch (err) {
+      console.error("Error loading herbs:", err);
+      alert("⚠ Error fetching approved herbs. See console.");
     }
+  }
 
-    function downloadQR(index, herbName) {
-      const qrCanvas = document.querySelector(`#qrcode-${index} canvas`);
-      if (!qrCanvas) return alert("QR not ready yet!");
-      const link = document.createElement("a");
-      link.download = `${herbName}_QR.png`;
-      link.href = qrCanvas.toDataURL("image/png");
-      link.click();
-    }
+  function downloadQR(index, herbName) {
+    const qrCanvas = document.querySelector(`#qrcode-${index} canvas`);
+    if (!qrCanvas) return alert("QR not ready yet!");
+    const link = document.createElement("a");
+    link.download = `${herbName}_QR.png`;
+    link.href = qrCanvas.toDataURL("image/png");
+    link.click();
+  }
 
-    document.getElementById("logoutBtn").onclick = () => {
-      alert("Logged out successfully!");
-      window.location.href = "index.html";
-    };
+  document.getElementById("logoutBtn").onclick = () => {
+    localStorage.removeItem("ayurtrace_loggedin_user");
+    window.location.href = "index.html";
+  };
 
-    loadApprovedHerbs();
+  loadApprovedHerbs();
+  setInterval(loadApprovedHerbs, 15000);
   </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
   const emptyMsg = document.getElementById("empty");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  const PUBLIC_URL = "https://ysammmqwxp.loclx.io";
+  const PUBLIC_URL = "https://tv6imwmsvd.loclx.io";
 
   async function fetchApprovedHerbs() {
     const res = await fetch(`${PUBLIC_URL}/api/approved-herbs`);
