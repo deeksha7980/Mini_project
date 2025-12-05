@@ -25,6 +25,25 @@ contract HerbTrace {
         products[productCount] = Product(productCount, _name, _origin, _processStage, _timestamp);
         emit ProductAdded(productCount, _name, _origin, _processStage, _timestamp);
     }
+    struct LabApproval {
+    string labName;
+    string certificate;
+    string timestamp;
+}
+
+mapping(uint => LabApproval) public approvals;
+
+event HerbApproved(uint id, string labName, string certificate, string timestamp);
+
+    function approveHerbData(
+    uint _id,
+    string memory _labName,
+    string memory _certificate,
+    string memory _timestamp
+    ) public {
+    approvals[_id] = LabApproval(_labName, _certificate, _timestamp);
+    emit HerbApproved(_id, _labName, _certificate, _timestamp);
+    }
 
     function getProduct(uint _id) public view returns (
         uint,

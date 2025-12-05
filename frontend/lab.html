@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AyurTrace — Lab Portal</title>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
@@ -25,6 +26,7 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      font-size: 18px;
     }
 
     header button {
@@ -34,33 +36,37 @@
       border-radius: 6px;
       padding: 8px 14px;
       cursor: pointer;
-      font-family: 'Times New Roman', serif;
       transition: 0.3s ease;
+      font-family: 'Times New Roman', serif;
     }
 
-    header button:hover { background: white; color: #1b8a4c; }
+    header button:hover {
+      background: white;
+      color: #1b8a4c;
+    }
 
     .filters {
       display: flex;
       justify-content: center;
       gap: 10px;
       padding: 15px;
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(8px);
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(6px);
     }
 
     .filters button {
       background: rgba(255,255,255,0.2);
       color: white;
-      border: 1px solid rgba(255,255,255,0.3);
       padding: 10px 18px;
+      border: 1px solid rgba(255,255,255,0.4);
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
-      transition: 0.3s;
+      transition: 0.3s ease;
     }
 
-    .filters button.active, .filters button:hover {
+    .filters button.active,
+    .filters button:hover {
       background: #1b8a4c;
       color: white;
     }
@@ -75,26 +81,31 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.96);
       color: #000;
       border-radius: 15px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
       width: 320px;
       padding: 18px;
-      backdrop-filter: blur(10px);
-      transition: transform 0.3s ease;
+      backdrop-filter: blur(8px);
+      transition: 0.3s ease;
     }
 
-    .card:hover { transform: scale(1.03); }
+    .card:hover {
+      transform: scale(1.03);
+    }
 
     img.thumb {
       width: 100%;
-      border-radius: 10px;
       height: 180px;
+      border-radius: 10px;
       object-fit: cover;
     }
 
-    .meta { text-align: left; margin-top: 10px; }
+    .meta {
+      margin-top: 10px;
+      text-align: left;
+    }
 
     textarea {
       width: 100%;
@@ -111,47 +122,47 @@
       margin-top: 10px;
     }
 
-    button.approve, button.reject {
+    button.approve {
+      background: #1b8a4c;
+      color: white;
       border: none;
       border-radius: 6px;
       padding: 8px 12px;
       cursor: pointer;
-      font-family: 'Times New Roman', serif;
-      transition: 0.3s ease;
-    }
-
-    button.approve {
-      background: #1b8a4c;
-      color: white;
     }
 
     button.reject {
       background: #d9534f;
       color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
     }
 
     #empty {
+      display: none;
       text-align: center;
+      padding: 20px;
       color: #1b8a4c;
-      font-size: 18px;
-      background: rgba(255,255,255,0.9);
-      padding: 20px 30px;
-      border-radius: 10px;
-      display: inline-block;
-      margin: 50px auto;
       font-weight: bold;
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      margin: 40px auto;
+      width: fit-content;
+      font-size: 18px;
     }
 
     footer {
       text-align: center;
-      color: rgba(255,255,255,0.9);
       padding: 15px;
-      font-size: 14px;
       background: rgba(0,0,0,0.4);
+      color: rgba(255,255,255,0.9);
       margin-top: auto;
     }
   </style>
 </head>
+
 <body>
   <header>
     <div>👩‍🔬 Welcome, <b id="labName">LabTech01</b></div>
@@ -173,5 +184,10 @@
   <footer>© HerbChain — Lab Quality Assurance Portal</footer>
 
   <script src="./js/lab.js"></script>
+  <script>
+    // Make refresh button functional
+    document.getElementById("refreshBtn").onclick = () => location.reload();
+  </script>
+
 </body>
 </html>

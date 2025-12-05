@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "80mb" })); // Handle image uploads
+app.use(express.json({ limit: "80mb" }));
 
 // -------------------- Paths --------------------
 const ROOT = __dirname;
@@ -24,12 +24,16 @@ if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]", "utf8");
 
 // -------------------- Blockchain Setup --------------------
 let contract;
+
 try {
   const contractJsonPath = path.join(__dirname, "../blockchain/artifacts/contracts/AyurTrace.sol/AyurTrace.json");
   const contractJson = require(contractJsonPath);
+
   const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
   contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractJson.abi, wallet);
+
   console.log("✅ Blockchain contract connected successfully!");
 } catch (err) {
   console.error("❌ Blockchain setup failed:", err.message);
@@ -53,25 +57,31 @@ function safeWriteJson(filePath, obj) {
 function saveBase64Image(base64Data, herbName = "herb") {
   const match = base64Data.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!match) throw new Error("Invalid image data");
+
   const ext = match[1].split("/")[1];
   const filename = `${herbName}_${Date.now()}.${ext}`;
+
   const filePath = path.join(UPLOADS_DIR, filename);
   fs.writeFileSync(filePath, Buffer.from(match[2], "base64"));
+
+  // LOCALHOST VERSION (works inside your lan)
   return `http://localhost:${process.env.PORT || 5000}/uploads/${filename}`;
 }
 
 // -------------------- Routes --------------------
-app.get("/", (_, res) => res.send("✅ AyurTrace backend running with blockchain enabled!"));
+app.get("/", (_, res) => res.send("Backend running with blockchain enabled!"));
 
-// 🧑‍🌾 Farmer submits new batch
+// 🧑‍🌾 Farmer Route
 app.post("/api/farmer", async (req, res) => {
   try {
     const { farmerName, herbName, latitude, longitude, timestamp, image } = req.body;
+
     if (!farmerName || !herbName || !image)
       return res.status(400).json({ error: "Missing required fields" });
 
     const photoUrl = saveBase64Image(image, herbName);
     const data = safeReadJson(DATA_FILE);
+
     const herbId = `${herbName.toLowerCase()}${data.length + 1}`;
 
     const entry = {
@@ -88,111 +98,117 @@ app.post("/api/farmer", async (req, res) => {
     // Store on blockchain
     const tx = await contract.addFarmerData(farmerName, herbName, photoUrl);
     await tx.wait();
+
     console.log(`🔗 Added to blockchain: ${tx.hash}`);
 
     data.push(entry);
     safeWriteJson(DATA_FILE, data);
-    res.json({ message: "✅ Farmer data stored on blockchain!", entry });
+
+    res.json({ message: "Farmer data stored!", entry });
   } catch (err) {
     console.error("❌ /api/farmer error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 🔬 Lab approval
+// 🔬 Lab Approval / Rejection
 app.post("/api/lab", async (req, res) => {
   try {
-    const { herbId, labName, certificate } = req.body;
+    const { herbId, labName, certificate, decision } = req.body;  
+    // decision = "approved" | "rejected"
 
-    // Debug log — shows what data the frontend sent
-    console.log("📩 Received lab approval request:", { herbId, labName, certificate });
+    console.log("📩 Lab Decision:", { herbId, labName, certificate, decision });
 
-    // Load local farmer data
+    // Load local data
     const data = safeReadJson(DATA_FILE);
     const herb = data.find(h => h.herbId === herbId);
 
     if (!herb) {
-      console.warn("⚠️ Herb not found in local JSON:", herbId);
       return res.status(404).json({ error: "Herb not found" });
     }
 
-    // Update local herb data
-    herb.status = "approved";
+    const batchId = parseInt(herbId.match(/\d+$/)?.[0]);
+    if (isNaN(batchId)) return res.status(400).json({ error: "Invalid herbId format" });
+
+    const timestamp = new Date().toISOString();
+
+    // ⭐ IMPORTANT FIX — store correct status
+    herb.status = decision;   
     herb.labName = labName;
     herb.certificate = certificate;
-    herb.labTimestamp = new Date().toLocaleString();
+    herb.labTimestamp = timestamp;
 
-    // ✅ Blockchain interaction (safe and optional)
-    try {
-      if (contract && typeof contract.approveHerbData === "function") {
-        console.log("🧾 Sending blockchain transaction...");
-        const tx = await contract.approveHerbData(herbId, labName, certificate);
-        await tx.wait();
-        console.log("🔗 Blockchain approval success:", tx.hash);
-      } else {
-        console.warn("⚠️ approveHerbData() not found in contract — skipping blockchain part");
+    // ⭐ Blockchain only for approved herbs
+    if (decision === "approved") {
+      try {
+        if (contract && typeof contract.approveHerbData === "function") {
+          console.log("⛓ Blockchain approval...");
+          const tx = await contract.approveHerbData(
+            batchId,
+            labName,
+            certificate,
+            timestamp
+          );
+          await tx.wait();
+          console.log("🔗 Blockchain TX:", tx.hash);
+        } else {
+          console.warn("approveHerbData() not found in contract");
+        }
+      } catch (err) {
+        console.error("❌ Blockchain error:", err.message);
       }
-    } catch (blockErr) {
-      console.error("❌ Blockchain approval failed:", blockErr.message);
-      // Continue anyway — don't break the frontend flow
+    } else {
+      console.log("❌ Herb rejected — skipping blockchain write");
     }
 
-    // ✅ Save back to JSON file
     safeWriteJson(DATA_FILE, data);
-    console.log("💾 Herb approval saved locally:", herb.herbId);
 
-    // Send response back to frontend
-    res.json({ message: "✅ Lab approval saved successfully!", herb });
+    res.json({ message: "Saved successfully!", herb });
+
   } catch (err) {
-    console.error("❌ /api/lab route error:", err.message);
-    res.status(500).json({ error: "Internal Server Error: " + err.message });
+    console.error("❌ /api/lab error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
+// 📦 Approved Herbs Only
+app.get("/api/approved-herbs", (_, res) => {
+  res.json(safeReadJson(DATA_FILE).filter(h => h.status === "approved"));
+});
 
-// 📦 Manufacturer & Consumer fetch routes
-app.get("/api/farmers-local", (_, res) => res.json(safeReadJson(DATA_FILE)));
-app.get("/api/approved-herbs", (_, res) =>
-  res.json(safeReadJson(DATA_FILE).filter((h) => h.status === "approved"))
-);
+// 📂 All Farmer Data
+app.get("/api/farmers-local", (_, res) => {
+  res.json(safeReadJson(DATA_FILE));
+});
 
-// -------------------- Serve Static Files --------------------
+// -------------------- Static Files --------------------
 app.use("/uploads", express.static(UPLOADS_DIR));
 
-// -------------------- Serve Frontend --------------------
 if (fs.existsSync(FRONTEND_DIR)) {
-  // Serve all frontend assets
   app.use("/frontend", express.static(FRONTEND_DIR));
 
-  // Serve specific pages like lab.html, manufacturer.html, etc.
   app.get(/^\/frontend\/([^\/]+)$/, (req, res) => {
     const filePath = path.join(FRONTEND_DIR, req.params[0]);
-    if (fs.existsSync(filePath)) {
-      res.sendFile(filePath);
-    } else {
-      res.status(404).send("❌ Page not found");
-    }
+    if (fs.existsSync(filePath)) res.sendFile(filePath);
+    else res.status(404).send("Page not found");
   });
 
-  // Handle consumer.html with ?batch=... for QR scans
   app.get(/^\/(frontend\/)?consumer\.html/, (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, "consumer.html"));
   });
 
-  // Fallback for any other frontend route
   app.get(/^\/frontend.*/, (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, "index.html"));
   });
 
   console.log("🧩 Serving frontend from:", FRONTEND_DIR);
-} else {
-  console.warn("⚠️ Frontend directory not found:", FRONTEND_DIR);
 }
 
 // -------------------- Start Server --------------------
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 AyurTrace backend running at: http://localhost:${PORT}`);
-  console.log("📁 farmerData.json path:", DATA_FILE);
-  console.log("📂 uploads path:", UPLOADS_DIR);
+  console.log("📁 farmerData.json:", DATA_FILE);
+  console.log("📂 uploads folder:", UPLOADS_DIR);
 });

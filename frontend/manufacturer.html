@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manufacturer Dashboard — HerbChain</title>
 
   <style>
@@ -31,7 +31,7 @@
     }
 
     header button {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255,255,255,0.2);
       border: 1px solid #fff;
       color: white;
       border-radius: 6px;
@@ -40,6 +40,7 @@
       font-family: 'Times New Roman', serif;
       transition: 0.3s ease;
     }
+
     header button:hover { background: white; color: #1b8a4c; }
 
     #empty {
@@ -88,7 +89,12 @@
     .details { text-align: left; margin-top: 10px; line-height: 1.5; }
     .details b { color: #1b8a4c; }
 
-    .qr-section { text-align: center; padding-top: 12px; border-top: 1px solid #eee; margin-top: 12px; }
+    .qr-section {
+      text-align: center;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+      margin-top: 12px;
+    }
 
     .qr-section button {
       margin-top: 10px;
@@ -126,52 +132,61 @@
 
   <footer>© HerbChain — Manufacturer Verification Portal</footer>
 
-  <!-- QR library -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
   <script>
-  const PUBLIC_URL = "https://tv6imwmsvd.loclx.io";
-  async function loadApprovedHerbs() {
-    try {
-      const res = await fetch("http://localhost:5000/api/farmers-local?nocache=" + Date.now(), { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch herbs");
-      const herbs = await res.json();
+    const API_BASE = window.location.hostname.includes("loclx.io")
+      ? window.location.origin.replace("/frontend", "")
+      : "http://localhost:5000";
 
-      const approvedHerbs = Array.isArray(herbs) ? herbs.filter(h => h.status === "approved") : [];
-      const container = document.getElementById("herbList");
-      const empty = document.getElementById("empty");
-      container.innerHTML = "";
+    const PUBLIC_URL = "https://nq6pnm3yng.loclx.io";
 
-      if (!approvedHerbs.length) {
-        empty.style.display = "inline-block";
-        empty.textContent = "No approved herbs yet.";
-        return;
-      }
+    async function loadApprovedHerbs() {
+      try {
+        const res = await fetch(`${API_BASE}/api/farmers-local?nocache=${Date.now()}`, { cache: "no-store" });
+        const herbs = await res.json();
+        const approvedHerbs = Array.isArray(herbs) ? herbs.filter(h => h.status === "approved") : [];
 
-      empty.style.display = "none";
+        const container = document.getElementById("herbList");
+        const empty = document.getElementById("empty");
+        container.innerHTML = "";
 
-      approvedHerbs.forEach((herb, i) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const imgSrc = herb.photoUrl || herb.image || "imgs/placeholder.png";
+        if (!approvedHerbs.length) {
+          empty.style.display = "inline-block";
+          empty.textContent = "No approved herbs yet.";
+          return;
+        }
 
-        card.innerHTML = `
-          <img src="${imgSrc}" alt="Herb image" onerror="this.src='imgs/placeholder.png'"/>
-          <div class="details">
-            <p><b>${herb.herbName || '—'}</b></p>
-            <p><b>Farmer:</b> ${herb.farmerName || '—'}</p>
-            <p><b>Batch ID:</b> ${herb.herbId || '—'}</p>
-            <p><b>Certificate:</b> ${herb.certificate ? herb.certificate : '—'}</p>
-          </div>
-          <div class="qr-section" id="qr-${i}">
-            <div id="qrcode-${i}" style="display:inline-block;"></div><br>
-            <button onclick="downloadQR(${i}, '${(herb.herbName || 'herb').replace(/'/g, '')}')">📥 Download QR</button>
-          </div>
-        `;
-        container.appendChild(card);
+        empty.style.display = "none";
 
-        const qrData = `${PUBLIC_URL}/frontend/consumer.html?batch=${encodeURIComponent(herb.herbId)}`;
-        try {
+        approvedHerbs.forEach((herb, i) => {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          let photoSrc = "";
+          if (herb.photoUrl && herb.photoUrl.startsWith("/uploads")) {
+            photoSrc = `${API_BASE}${herb.photoUrl}`;
+          } else if (herb.photoUrl && (herb.photoUrl.startsWith("http") || herb.photoUrl.startsWith("https"))) {
+            photoSrc = herb.photoUrl;
+          }
+
+          card.innerHTML = `
+            ${photoSrc ? `<img src="${photoSrc}" alt="Herb Image" />` : ""}
+            <div class="details">
+              <p><b>${herb.herbName || '—'}</b></p>
+              <p><b>Farmer:</b> ${herb.farmerName || '—'}</p>
+              <p><b>Batch ID:</b> ${herb.herbId || '—'}</p>
+              <p><b>Verified By:</b> ${herb.labName || 'Lab'}</p>
+              <p><b>Certificate:</b> ${herb.certificate || '—'}</p>
+            </div>
+            <div class="qr-section" id="qr-${i}">
+              <div id="qrcode-${i}" style="display:inline-block;"></div><br>
+              <button onclick="downloadQR(${i}, '${(herb.herbName || 'herb').replace(/'/g, '')}')">📥 Download QR</button>
+            </div>
+          `;
+
+          container.appendChild(card);
+
+          const qrData = `${PUBLIC_URL}/frontend/consumer.html?batch=${encodeURIComponent(herb.herbId)}`;
           new QRCode(document.getElementById(`qrcode-${i}`), {
             text: qrData,
             width: 120,
@@ -180,32 +195,28 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-        } catch (e) {
-          console.error("QR render error", e);
-        }
-      });
-    } catch (err) {
-      console.error("Error loading herbs:", err);
-      alert("⚠ Error fetching approved herbs. See console.");
+        });
+      } catch (err) {
+        console.error("Error loading herbs:", err);
+        alert("⚠ Error fetching approved herbs. See console.");
+      }
     }
-  }
 
-  function downloadQR(index, herbName) {
-    const qrCanvas = document.querySelector(`#qrcode-${index} canvas`);
-    if (!qrCanvas) return alert("QR not ready yet!");
-    const link = document.createElement("a");
-    link.download = `${herbName}_QR.png`;
-    link.href = qrCanvas.toDataURL("image/png");
-    link.click();
-  }
+    function downloadQR(index, herbName) {
+      const qrCanvas = document.querySelector(`#qrcode-${index} canvas`);
+      if (!qrCanvas) return alert("QR not ready yet!");
+      const link = document.createElement("a");
+      link.download = `${herbName}_QR.png`;
+      link.href = qrCanvas.toDataURL("image/png");
+      link.click();
+    }
 
-  document.getElementById("logoutBtn").onclick = () => {
-    localStorage.removeItem("ayurtrace_loggedin_user");
-    window.location.href = "index.html";
-  };
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.removeItem("ayurtrace_loggedin_user");
+      window.location.href = "index.html";
+    };
 
-  loadApprovedHerbs();
-  setInterval(loadApprovedHerbs, 15000);
+    loadApprovedHerbs();
   </script>
 </body>
 </html>
